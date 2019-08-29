@@ -1,0 +1,21 @@
+# please see file in readme
+# this file is only for testing/ development
+
+version: "2"
+
+services:
+  web:
+    container_name: php_smtp_nginx_dev
+    ports:
+      - "127.0.0.1:8080:80"
+    build:
+      context: .
+    volumes:
+      - ./php/mail.php:/php-code/mail.php:ro # for testing
+    environment:
+      - SMTP_SERVER=
+      - SMTP_PORT=587
+      - SMTP_USER=
+      - SMTP_PASS=
+      # - TLS_ONOFF=off # defaults to on
+      # - STARTTLS_ONOFF=off # defaults to on
