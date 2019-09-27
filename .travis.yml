@@ -4,11 +4,4 @@ services:
 jobs:
   include:
     - stage: build docker image
-      script:
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker build -t php_smtp_nginx .
-      - docker images
-      - docker tag php_smtp_nginx kimbtechnologies/php_smtp_nginx:$TRAVIS_COMMIT
-      - docker tag php_smtp_nginx kimbtechnologies/php_smtp_nginx:latest
-      - docker push kimbtechnologies/php_smtp_nginx:$TRAVIS_COMMIT
-      - docker push kimbtechnologies/php_smtp_nginx:latest
+      script: bash ./dockerpublish.sh
