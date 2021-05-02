@@ -18,7 +18,8 @@ version: "2"
 
 services:
   web:
-    image: kimbtechnologies/php_smtp_nginx:latest
+    image: kimbtechnologies/php_smtp_nginx:latest # uses php 7.4
+    #image: kimbtechnologies/php_smtp_nginx:8-latest # uses php 8.*
     container_name: php_smtp_nginx
     ports:
       - "127.0.0.1:8080:80"

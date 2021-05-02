@@ -9,6 +9,9 @@ services:
     ports:
       - "127.0.0.1:8080:80"
     build:
+      args:
+        #- BASEIMAGE_TAG=latest
+        - BASEIMAGE_TAG=8-latest
       context: .
     volumes:
       - ./php/mail.php:/php-code/mail.php:ro # for testing
