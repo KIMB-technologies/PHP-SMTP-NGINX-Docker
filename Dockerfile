@@ -1,5 +1,5 @@
 ARG BASEIMAGE_TAG=latest
-FROM kimbtechnologies/php_nginx:${BASEIMAGE_TAG}
+FROM kimbtechnologies/php_nginx:latest
 
 # copy own msmtp sender
 COPY ./msmtpsend.sh ./msmtpsendpw.sh /bin/
