@@ -10,50 +10,66 @@ env:
   IMAGE_OWNER: kimbtechnologies
   IMAGE_NAME: php_smtp_nginx
   BASE_IMAGE: kimbtechnologies/php_nginx:latest
+  PLATFORMS: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/arm64
+  DOCKERFILE_PATH: Dockerfile
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      
-    # check if update needed
+  
+    # Init and check
+
     - name: Check for new baseimage 
       id: check
-      uses: lucacome/docker-image-update-checker@v1
+      uses: lucacome/docker-image-update-checker@v3.1.0
       with:
         base-image: "${{env.BASE_IMAGE}}"
         image: "${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:latest"
       if: github.event_name != 'push'
     
-    # setup build env.
     - name: Access repository contents
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
+
     - name: Login to DockerHub
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_TOKEN }}
       if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
+    
+    # Multi platform support
 
-    # build local AMD image
-    - name: Build the AMD image
-      run: docker build . --file "Dockerfile" --tag "$IMAGE_OWNER/$IMAGE_NAME:latest"
-      if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
-    - name: Push tag 8-latest  
-      run: docker tag "$IMAGE_OWNER/$IMAGE_NAME:latest" "$IMAGE_OWNER/$IMAGE_NAME:8-latest"; docker push "$IMAGE_OWNER/$IMAGE_NAME:8-latest";
-      if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
-
-     # Multi platform support
     - name: Set up QEMU for Docker Buildx
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
       if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
   
     # Multi platform image build and push
-    - name: Build and push the ARM Docker images
-      run: php_v=$(docker run --rm "$IMAGE_OWNER/$IMAGE_NAME:latest" sh -c 'echo "$PHP_VERSION"'); php_v=$(echo $php_v | grep -o '[0-9\.]*'); docker buildx build --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/arm64 . --file "Dockerfile" --tag "$IMAGE_OWNER/$IMAGE_NAME:latest" --tag "$IMAGE_OWNER/$IMAGE_NAME:php-$php_v" --push
+
+    - name: Get PHP version (and write to VERSION file)
+      run: php_v=$(docker run --rm "$BASE_IMAGE" sh -c 'echo "$PHP_VERSION"'); php_v=$(echo $php_v | grep -o '[0-9\.]*'); echo "latest" > ./VERSION; echo "php-$php_v" >> ./VERSION;
       if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
+
+    - name: Get main tag (from VERSION file)
+      run: echo -n "IMAGE_TAG=$(head -n 1 VERSION)" >> $GITHUB_ENV
+
+    - name: Docker build and push the main tag
+      run: docker buildx build --platform "$PLATFORMS" . --file "$DOCKERFILE_PATH" --tag "$IMAGE_OWNER/$IMAGE_NAME:$IMAGE_TAG" --push
+      if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }}
+     
+    - name: Push more tags
+      if: ${{ (github.event_name == 'push') || (steps.check.outputs.needs-updating == 'true') }} 
+      run: |
+          cat VERSION | while read TAG; do
+            if [[ $TAG =~ ^#.* ]] || [[ $TAG == $IMAGE_TAG ]] ; then  
+              echo "Skipping $TAG";
+            else 
+              echo "Tagging image as $TAG and pushing";
+              docker buildx build --platform "$PLATFORMS" . --file "$DOCKERFILE_PATH" --tag "$IMAGE_OWNER/$IMAGE_NAME:$TAG" --push
+            fi;
+          done;
       

@@ -1,21 +1,18 @@
-# please see file in readme
-# this file is only for testing/ development
-
-version: "2"
 
 services:
   web:
-    container_name: php_smtp_nginx_dev
+    image: kimbtechnologies/php_smtp_nginx:latest 
+    container_name: php_smtp_nginx
     ports:
       - "127.0.0.1:8080:80"
-    build:
-      context: .
     volumes:
-      - ./php/mail.php:/php-code/mail.php:ro # for testing
+      - ./php/:/php-code/ # load custom php code
+    restart: unless-stopped
     environment:
-      - SMTP_SERVER=
-      - SMTP_PORT=587
-      - SMTP_USER=
-      - SMTP_PASS=
+      - SMTP_SERVER= # the mail server host
+      - SMTP_PORT= # the port to deliver mails (587 for starttls or 465 for tls)
+      - SMTP_USER= # the username for the mail server
+      - SMTP_PASS= # the password for the mail server
+      # - STARTTLS_ONOFF=off # defaults to on (uncomment if using port 465)
       # - TLS_ONOFF=off # defaults to on
-      # - STARTTLS_ONOFF=off # defaults to on
+  
