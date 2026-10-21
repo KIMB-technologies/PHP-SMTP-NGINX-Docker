@@ -1,4 +1,3 @@
-ARG BASEIMAGE_TAG=latest
 FROM kimbtechnologies/php_nginx:latest
 
 # copy own msmtp sender
